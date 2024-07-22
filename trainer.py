@@ -90,11 +90,17 @@ class Trainer:
         self.hyperparameters_tuned = False
         self.hyperparameter_study = None
 
-        self.training_dataset = load_dataset(images=train_data["images"], labels=train_data["labels"],
+        if not self.train_data:
+            self.training_dataset = []
+            self.validation_dataset = []
+            self.test_dataset = load_dataset(images=test_data["images"], labels=test_data["labels"],
+                                             num_classes=self.num_classes, augment=False)
+        else:
+            self.training_dataset = load_dataset(images=train_data["images"], labels=train_data["labels"],
                                              num_classes=self.num_classes, augment=self.augmentation)
-        self.validation_dataset = load_dataset(images=val_data["images"], labels=val_data["labels"],
+            self.validation_dataset = load_dataset(images=val_data["images"], labels=val_data["labels"],
                                                num_classes=self.num_classes, augment=False)
-        self.test_dataset = load_dataset(images=test_data["images"], labels=test_data["labels"],
+            self.test_dataset = load_dataset(images=test_data["images"], labels=test_data["labels"],
                                          num_classes=self.num_classes, augment=False)
 
         self.criterion = nn.CrossEntropyLoss()

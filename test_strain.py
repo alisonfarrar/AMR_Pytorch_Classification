@@ -6,22 +6,20 @@ import torch
 import timm
 import numpy as np
 from trainer import Trainer
-from file_io import get_metadata, get_cell_images, cache_data, get_training_data
+from file_io import get_metadata, get_cell_images, cache_data, get_training_data, convert_antibiotics_to_strain
 import pickle
 
 image_size = (64,64)
-resize = False
+resize = True
 
-#antibiotic_list = ["Untreated", "Ciprofloxacin"]
-antibiotic_list = ["Ciprofloxacin"]
-microscope_list = ["BIO-NIM"]
-channel_list = ["Cy3"]
+antibiotic_list = ["Untreated"]
+#antibiotic_list = ["Untreated"]
+microscope_list = ["KAP-NIM"]
+channel_list = ["mKate", "GFP"]
 cell_list = ["single"]
-train_metadata = {"content": "E.Coli Clinical"}
-test_metadata = {"content": "E.Coli Clinical",
-                 "antibiotic concentration": "1XEUCAST",
-                 "user_meta1": "L48480",
-                 "user_meta3": "BioRepA"} # this tag includes only 0XEUCAST, 1XEUCAST, 20X, and none abx conc
+train_metadata = {"content": "E.Coli MG1655"}
+test_metadata = {"content": "E.Coli MG1655",
+                 "user_meta6": "TimeSeries"}
 
 model_backbone = 'efficientnet_b0'
 
@@ -35,13 +33,13 @@ AUGMENT = True
 ## Directory Linux
 #AKSEG_DIRECTORY = r"/run/user/26623/gvfs/smb-share:server=physics.ox.ac.uk,share=dfs/DAQ/CondensedMatterGroups/AKGroup/Piers/AKSEG"
 ## Directory Windows
-AKSEG_DIRECTORY = r"\\physics\dfs\DAQ\CondensedMatterGroups\AKGroup\Piers\AKSEG"
+AKSEG_DIRECTORY = r"\\cmdaq6.nat.physics.ox.ac.uk\AKGroup\Piers_2\BacSeg Database"
 
 USER_INITIAL = "AF"
 
 #SAVE_DIR = "/home/turnerp/PycharmProjects/AMR_Pytorch_Classification"
-SAVE_DIR = r"H:\code\AMR_PyTorch"
-MODEL_FOLDER_NAME = "AntibioticClassification"
+SAVE_DIR = r"C:\Users\farrara\Desktop\AMR_Pytorch_Classification"
+MODEL_FOLDER_NAME = "AntibioticClassification_TimeLapse_Untreated"
 
 MODEL_PATH = r"C:\Users\farrara\Desktop\AMR_Pytorch_Classification\AMRClassification_[Ciprofloxacin-Cy3]_231118_1123"
 
@@ -59,8 +57,13 @@ akseg_metadata = get_metadata(AKSEG_DIRECTORY,
                               microscope_list,
                               train_metadata,
                               test_metadata,)
+#akseg_metadata = convert_antibiotics_to_strain(akseg_metadata)
 akseg_metadata.to_csv('akseg_metadata.csv')
 
+#antibiotic_list = ["Intermediate"]
+
+channel_list = ["mKate"]
+#
 if __name__ == '__main__':
 
     cached_data = cache_data(
@@ -79,19 +82,25 @@ if __name__ == '__main__':
     with open('cacheddata.pickle', 'rb') as handle:
         cached_data = pickle.load(handle)
 
-    #num_classes = len(np.unique(cached_data["labels"]))
-    num_classes = 2 # Treated and untreated
+    num_classes = len(np.unique(cached_data["labels"]))
+    #antibiotic_list = ["Sensitive", "Resistant"]
+    #print(np.unique(cached_data["labels"]))
+
     print(f"num_classes: {num_classes}, num_images: {len(cached_data['images'])}")
-    # Balance False for testing
+
+    # # Balance False for testing
     train_data, val_data, test_data = get_training_data(cached_data,
                                                           shuffle=True,
                                                           ratio_train = 0.8,
                                                           val_test_split=0.5,
                                                           label_limit = 'None',
                                                           balance = False,)
+    if len(train_data)==0:
+        print(f"test_data: {len(test_data['images'])}")
+    else:
+        print(f"train_data: {len(train_data['images'])}, val_data: {len(val_data['images'])}, test_data: {len(test_data['images'])}")
 
-    print(f"train_data: {len(train_data['images'])}, val_data: {len(val_data['images'])}, test_data: {len(test_data['images'])}")
-    #
+    num_classes = 2  # Treated and untreated
     model = timm.create_model(model_backbone, pretrained=True, num_classes=2).to(device)
     # 'timm.list_models()' to list available models
     model_state_dict = torch.load(MODEL_PATH)['model_state_dict']
@@ -113,8 +122,8 @@ if __name__ == '__main__':
                       epochs=EPOCHS,
                       batch_size = BATCH_SIZE,
                       model_folder_name = MODEL_FOLDER_NAME)
-
-    trainer.plot_descriptive_dataset_stats(show_plots=False, save_plots=True)
     #
+    # #trainer.plot_descriptive_dataset_stats(show_plots=False, save_plots=True)
+    # #
     model_data = trainer.evaluate(MODEL_PATH)
     torch.cuda.empty_cache()

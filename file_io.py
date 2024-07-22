@@ -33,6 +33,18 @@ from visualise import normalize99, rescale01
 from stats import get_stats
 
 
+def convert_antibiotics_to_strain(df):
+    df.loc[df['user_meta1'] == 'L17667', 'antibiotic'] = 'Resistant'
+    df.loc[df['user_meta1'] == 'L60725', 'antibiotic'] = 'Resistant'
+    df.loc[df['user_meta1'] == 'L23827', 'antibiotic'] = 'Resistant'
+    df.loc[df['user_meta1'] == 'L55048', 'antibiotic'] = 'Resistant'
+    df.loc[df['user_meta1'] == 'L52042', 'antibiotic'] = 'Sensitive'
+    df.loc[df['user_meta1'] == 'L74177', 'antibiotic'] = 'Sensitive'
+    df.loc[df['user_meta1'] == 'L48480', 'antibiotic'] = 'Sensitive'
+    df.loc[df['user_meta1'] == 'L36926', 'antibiotic'] = 'Intermediate'
+    return df
+
+
 def align_images(images):
     try:
 
@@ -201,6 +213,7 @@ def import_coco_json(json_path, cell_types):
 
     return mask, labels
 
+
 def resize_image(image_size, h, w, cell_image_crop, colicoords=False, resize=False):
     cell_image_crop = np.moveaxis(cell_image_crop, 0, -1)
 
@@ -292,8 +305,17 @@ def get_cell_images(dat, image_size, channel_list, cell_list, antibiotic_list,
                 img = tifffile.imread(img_path)
                 image_data.append(img)
                 image_channels.append(channel)
-
-                mask, labels = import_coco_json(json_path, cell_list)
+                # fuzzy search for json path
+                if os.path.isfile(json_path):
+                    mask, labels = import_coco_json(json_path, cell_list)
+                else:
+                    for i in range(4):
+                        json_path = str(json_path)
+                        base_filename = json_path[:-4]
+                        filename = base_filename + str(i) + ".txt"
+                        file_path = os.path.join(file_dir, filename)
+                        if os.path.isfile(file_path):
+                            mask, labels = import_coco_json(file_path, cell_list)
 
         if align:
             image_data = align_images(image_data)
@@ -346,6 +368,7 @@ def get_cell_images(dat, image_size, channel_list, cell_list, antibiotic_list,
                 cell_image_crop = rgb[:, y1:y2, x1:x2].copy()
 
                 stats = get_stats(image_channels, rgb, mask, cell_mask, cell_image_crop, cell_mask_crop, cnt)
+                stats['File Name'] = file_name
 
                 if mask_background:
                     cell_image_crop[:, cell_mask_crop == 0] = 0
@@ -370,7 +393,7 @@ def get_cell_images(dat, image_size, channel_list, cell_list, antibiotic_list,
                     cell_mask_id.append(mask_ids[i])
                     cell_statistics.append(stats)
     except:
-        cell_dataset, cell_images, cell_labels, cell_file_namesm, mask_ids, mask_ids = [], [], [], [], [], []
+        cell_dataset, cell_images, cell_labels, cell_file_names, mask_ids, mask_ids = [], [], [], [], [], []
         print(traceback.format_exc())
 
     return cell_dataset, cell_images, cell_labels, cell_file_names, cell_mask_id, cell_statistics
@@ -437,7 +460,6 @@ def limit_train_data(train_data, num_files):
 
     return train_data
 
-
 def get_training_data(cached_data, shuffle=True, ratio_train=0.8, val_test_split=0.5, label_limit="None",
                       balance=False):
     label_names = cached_data.pop("antibiotic_list")
@@ -451,6 +473,46 @@ def get_training_data(cached_data, shuffle=True, ratio_train=0.8, val_test_split
     dataset = cached_data["dataset"]
     train_indices = np.argwhere(np.array(dataset) == "train")[:, 0].tolist()
     test_indices = np.argwhere(np.array(dataset) == "test")[:, 0].tolist()
+
+    # Check if train_indices is empty and return empty train_data and val_data if true
+    if not train_indices:
+        print("No training data available. Returning empty train_data and val_data.")
+        #train_data["antibiotic_list"] = label_names
+        #val_data["antibiotic_list"] = label_names
+        test_data["antibiotic_list"] = label_names
+        data_sort = pd.DataFrame(cached_data).drop(labels=["images"], axis=1)
+        data_sort = data_sort.groupby(["labels"])
+
+        for i in range(len(data_sort)):
+
+            data = data_sort.get_group(list(data_sort.groups)[i])
+            test_indices = data[data["dataset"] == "test"].index.values.tolist()
+
+            for key, value in cached_data.items():
+
+                if key in ["images", "masks"]:
+
+                    test_dat = list(np.array(value)[test_indices])
+
+                else:
+
+                    test_dat = np.take(np.array(value), test_indices).tolist()
+
+                if label_limit != "None":
+                    test_dat = test_dat[:label_limit]
+
+                if key in train_data.keys():
+                    test_data[key].extend(test_dat)
+
+                else:
+                    test_data[key] = test_dat
+
+            if balance == True:
+                print("balancing test datasets")
+                test_data = balance_dataset(test_data)
+
+            test_data["antibiotic_list"] = label_names
+        return train_data, val_data, test_data
 
     overlap = list(set(train_indices) & set(test_indices))
 
@@ -529,6 +591,98 @@ def get_training_data(cached_data, shuffle=True, ratio_train=0.8, val_test_split
     test_data["antibiotic_list"] = label_names
 
     return train_data, val_data, test_data
+
+# def get_training_data(cached_data, shuffle=True, ratio_train=0.8, val_test_split=0.5, label_limit="None",
+#                       balance=False):
+#     label_names = cached_data.pop("antibiotic_list")
+#
+#     train_data = {}
+#     val_data = {}
+#     test_data = {}
+#
+#     cached_data = shuffle_train_data(cached_data)
+#
+#     dataset = cached_data["dataset"]
+#     train_indices = np.argwhere(np.array(dataset) == "train")[:, 0].tolist()
+#     test_indices = np.argwhere(np.array(dataset) == "test")[:, 0].tolist()
+#
+#     overlap = list(set(train_indices) & set(test_indices))
+#
+#     data_sort = pd.DataFrame(cached_data).drop(labels=["images"], axis=1)
+#     data_sort = data_sort.groupby(["labels"])
+#
+#     for i in range(len(data_sort)):
+#
+#         data = data_sort.get_group(list(data_sort.groups)[i])
+#
+#         if shuffle is True:
+#             data = data.sample(frac=1, random_state=42)
+#
+#         train_indices = data[data["dataset"] == "train"].index.values.tolist()
+#         test_indices = data[data["dataset"] == "test"].index.values.tolist()
+#
+#         train_indices, val_indices = train_test_split(train_indices,
+#                                                       train_size=ratio_train,
+#                                                       random_state=42,
+#                                                       shuffle=True)
+#
+#         if len(test_indices) == 0:
+#             val_indices, test_indices = train_test_split(val_indices,
+#                                                          train_size=val_test_split,
+#                                                          random_state=42,
+#                                                          shuffle=True)
+#             print('No test data, using validation set as test dataset')
+#
+#         overlap = list(set(train_indices) & set(val_indices) & set(test_indices))
+#
+#         for key, value in cached_data.items():
+#
+#             if key in ["images", "masks"]:
+#
+#                 train_dat = list(np.array(value)[train_indices])
+#                 val_dat = list(np.array(value)[val_indices])
+#                 test_dat = list(np.array(value)[test_indices])
+#
+#             else:
+#
+#                 train_dat = np.take(np.array(value), train_indices).tolist()
+#                 val_dat = np.take(np.array(value), val_indices).tolist()
+#                 test_dat = np.take(np.array(value), test_indices).tolist()
+#
+#             if label_limit != "None":
+#                 train_dat = train_dat[:label_limit]
+#                 val_dat = val_dat[:label_limit]
+#                 test_dat = test_dat[:label_limit]
+#
+#             if key in train_data.keys():
+#
+#                 train_data[key].extend(train_dat)
+#                 val_data[key].extend(val_dat)
+#                 test_data[key].extend(test_dat)
+#
+#             else:
+#
+#                 train_data[key] = train_dat
+#                 val_data[key] = val_dat
+#                 test_data[key] = test_dat
+#
+#     if shuffle == True:
+#         print("shuffling train/val/test datasets")
+#         train_data = shuffle_train_data(train_data)
+#         val_data = shuffle_train_data(val_data)
+#         test_data = shuffle_train_data(test_data)
+#
+#     if balance == True:
+#         print("balancing train/val/test datasets")
+#         train_data = balance_dataset(train_data)
+#         val_data = balance_dataset(val_data)
+#         test_data = balance_dataset(test_data)
+#
+#     train_data["antibiotic_list"] = label_names
+#     val_data["antibiotic_list"] = label_names
+#     test_data["antibiotic_list"] = label_names
+#
+#     return train_data, val_data, test_data
 
 
 def balance_dataset(dataset):
