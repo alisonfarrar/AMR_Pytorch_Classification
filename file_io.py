@@ -369,6 +369,7 @@ def get_cell_images(dat, image_size, channel_list, cell_list, antibiotic_list,
 
                 stats = get_stats(image_channels, rgb, mask, cell_mask, cell_image_crop, cell_mask_crop, cnt)
                 stats['File Name'] = file_name
+                stats['Mask ID'] = mask_ids[i]
 
                 if mask_background:
                     cell_image_crop[:, cell_mask_crop == 0] = 0
