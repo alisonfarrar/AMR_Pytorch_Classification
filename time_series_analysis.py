@@ -37,3 +37,4 @@ def get_stats(PATH):
 df = get_stats(MODEL_PATH)
 df.to_csv('out_cip1xEUCAST_A_cip.csv', index=False)
 '''rest can be done in origin from this csv'''
+# Stats on columns -> mean and standard error by time
