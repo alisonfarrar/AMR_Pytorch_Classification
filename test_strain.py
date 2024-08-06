@@ -12,13 +12,15 @@ import pickle
 image_size = (64,64)
 resize = True
 
-antibiotic_list = ["Untreated"]
+antibiotic_list = ["Ciprofloxacin"]
 #antibiotic_list = ["Untreated"]
 microscope_list = ["KAP-NIM"]
-channel_list = ["mKate", "GFP"]
+channel_list = ["mKate"]
 cell_list = ["single"]
 train_metadata = {"content": "E.Coli MG1655"}
 test_metadata = {"content": "E.Coli MG1655",
+                 "user_meta3": "BioRepA",
+                 "user_meta5": "Experiment5min",
                  "user_meta6": "TimeSeries"}
 
 model_backbone = 'efficientnet_b0'
@@ -39,9 +41,9 @@ USER_INITIAL = "AF"
 
 #SAVE_DIR = "/home/turnerp/PycharmProjects/AMR_Pytorch_Classification"
 SAVE_DIR = r"C:\Users\farrara\Desktop\AMR_Pytorch_Classification"
-MODEL_FOLDER_NAME = "AntibioticClassification_TimeLapse_Untreated"
+MODEL_FOLDER_NAME = "AntibioticClassification_TimeLapse_CipModel_1XCip5min"
 
-MODEL_PATH = r"C:\Users\farrara\Desktop\AMR_Pytorch_Classification\AMRClassification_[Ciprofloxacin-Cy3]_231118_1123"
+MODEL_PATH = r"AMRClassification_[Ciprofloxacin-Cy3]_231118_1123"
 
 # device
 if torch.cuda.is_available():
