@@ -11,12 +11,13 @@ resize = False
 antibiotic_list = ["Ciprofloxacin"]
 microscope_list = ["BIO-NIM"]
 #channel_list = ["DAPI"]
-channel_list = ["Cy3"]
+channel_list = ["Cy3","DAPI"]
 cell_list = ["single"]
-train_metadata = {"content": "E.Coli MG1655",
-                  "antibiotic concentration": "1XEUCAST"}
-test_metadata = {"content": "E.Coli MG1655",
-                 "antibiotic concentration": "1XEUCAST",
+train_metadata = {"content": "E.Coli Clinical",
+                  "antibiotic concentration": "20XEUCAST"}
+test_metadata = {"content": "E.Coli Clinical",
+                 "antibiotic concentration": "20XEUCAST",
+                 "user_meta2": "SensResModel",
                  "user_meta3": "BioRepB"} # this tag includes only 0XEUCAST, 1XEUCAST, 20X, and none abx conc
 #"segmentation_curated": True
 #model_backbone = 'densenet121'
@@ -32,7 +33,7 @@ AUGMENT = True
 ## Linux
 # AKSEG_DIRECTORY = r"/run/user/26623/gvfs/smb-share:server=physics.ox.ac.uk,share=dfs/DAQ/CondensedMatterGroups/AKGroup/Piers/AKSEG"
 ## Windows
-AKSEG_DIRECTORY = r"\\physics\dfs\DAQ\CondensedMatterGroups\AKGroup\Piers\AKSEG"
+AKSEG_DIRECTORY = r"\\cmdaq6.nat.physics.ox.ac.uk\AKGroup\Piers_2\BacSeg Database"
 
 
 USER_INITIAL = "AF"
@@ -40,7 +41,7 @@ USER_INITIAL = "AF"
 # SAVE_DIR = "/home/farrara/code/AMR_PyTorch"
 ## SERVER
 SAVE_DIR = r"C:\Users\farrara\Desktop\AMR_Pytorch_Classification"
-MODEL_FOLDER_NAME = "AntibioticClassification_SensRes"
+MODEL_FOLDER_NAME = "AntibioticClassification_SensResB"
 
 
 # device
@@ -115,7 +116,7 @@ if __name__ == '__main__':
                       batch_size = BATCH_SIZE,
                       model_folder_name = MODEL_FOLDER_NAME)
 
-    trainer.plot_descriptive_dataset_stats(show_plots=False, save_plots=True)
+    #trainer.plot_descriptive_dataset_stats(show_plots=False, save_plots=True)
 
     trainer.visualise_augmentations(n_examples=10, show_plots=False, save_plots=True)
 

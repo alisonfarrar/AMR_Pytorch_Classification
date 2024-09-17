@@ -10,18 +10,22 @@ from file_io import get_metadata, get_cell_images, cache_data, get_training_data
 import pickle
 
 image_size = (64,64)
-resize = True
+resize = False
 
 antibiotic_list = ["Ciprofloxacin"]
 #antibiotic_list = ["Untreated"]
-microscope_list = ["KAP-NIM"]
-channel_list = ["mKate"]
+microscope_list = ["BIO-NIM"]
+channel_list = ["Cy3","DAPI"]
 cell_list = ["single"]
-train_metadata = {"content": "E.Coli MG1655"}
-test_metadata = {"content": "E.Coli MG1655",
-                 "user_meta3": "BioRepA",
-                 "user_meta5": "Experiment5min",
-                 "user_meta6": "TimeSeries"}
+train_metadata = {"content": "E.Coli Clinical",
+                  "user_meta1": "L60725",
+                  "user_meta6": "AMRPhenotypes"}
+test_metadata = {"content": "E.Coli Clinical",
+                 "antibiotic concentration": "20XEUCAST",
+                 "user_meta1": "L60725",
+                 "user_meta2": "SensResModel",
+                 "user_meta3": "BioRepD",
+                 "user_meta6": "AMRPhenotypes"} # this tag includes only 0XEUCAST, 1XEUCAST, 20X, and none abx conc
 
 model_backbone = 'efficientnet_b0'
 
@@ -41,9 +45,9 @@ USER_INITIAL = "AF"
 
 #SAVE_DIR = "/home/turnerp/PycharmProjects/AMR_Pytorch_Classification"
 SAVE_DIR = r"C:\Users\farrara\Desktop\AMR_Pytorch_Classification"
-MODEL_FOLDER_NAME = "AntibioticClassification_TimeLapse_CipModel_1XCip5min"
+MODEL_FOLDER_NAME = "SensRes20X_NewAug_TestB"
 
-MODEL_PATH = r"AMRClassification_[Ciprofloxacin-Cy3]_231118_1123"
+MODEL_PATH = r"C:\Users\farrara\Desktop\AMR_Pytorch_Classification\models\AntibioticClassification_SensResB_240916_1119\AMRClassification_[Resistant-Cy3]_240916_1119"
 
 # device
 if torch.cuda.is_available():
@@ -59,12 +63,13 @@ akseg_metadata = get_metadata(AKSEG_DIRECTORY,
                               microscope_list,
                               train_metadata,
                               test_metadata,)
-#akseg_metadata = convert_antibiotics_to_strain(akseg_metadata)
+akseg_metadata = convert_antibiotics_to_strain(akseg_metadata)
 akseg_metadata.to_csv('akseg_metadata.csv')
+antibiotic_list= ["Sensitive", "Resistant"]
 
 #antibiotic_list = ["Intermediate"]
 
-channel_list = ["mKate"]
+channel_list = ["Cy3"]
 #
 if __name__ == '__main__':
 
@@ -109,7 +114,7 @@ if __name__ == '__main__':
     model.load_state_dict(model_state_dict, strict=False)
     #model = torch.load(MODEL_PATH)
     print(type(model))
-    antibiotic_list = ["Untreated", "Ciprofloxacin"]
+    antibiotic_list = ["Sensitive", "Resistant"]
     trainer = Trainer(model=model,
                       num_classes=num_classes,
                       augmentation=AUGMENT,

@@ -49,8 +49,10 @@ class load_dataset(data.Dataset):
         transform = A.Compose([
             RandomRotate90(),
             Flip(),
-            Affine(scale=(0.6, 1.4), shear=(-20, 20), rotate=(-360, 360), translate_px=[-20, 20]),
+            Affine(scale=(0.8, 1.2), rotate=(-360, 360), translate_px=[-20, 20]),
         ])
+
+        '''previously Affine(scale=(0.6, 1.4), shear=(-20, 20), rotate=(-360, 360), translate_px=[-20, 20]),'''
 
         img = transform(image=img)['image']
         mask = img.copy()
@@ -60,7 +62,7 @@ class load_dataset(data.Dataset):
         #    GaussNoise(var_limit=0.0005, per_channel=True, always_apply=False),
         #    Blur(blur_limit=3, always_apply=False, p=0.5),
         #    RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.5, always_apply=False),
-        #    PixelDropout(dropout_prob=0.05, per_channel=True, p=0.5),
+        #    PixelDropout(dropout_prob=0.05, per_channel=Truenoise, p=0.5),
         #])
         """ Remove blur
         """
